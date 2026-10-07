@@ -1,0 +1,223 @@
+{% extends base_template %}
+{% block content %}
+<style>
+    .auth-card {
+        position: relative;
+        background: #f7f5f2;
+        border: 1px solid rgba(179, 146, 90, 0.55);
+        box-shadow: 0 30px 60px -40px rgba(23, 18, 15, 0.45);
+        transition: box-shadow .4s ease;
+    }
+    .auth-card::before {
+        content: '';
+        position: absolute;
+        inset: 8px;
+        border: 1px solid rgba(179, 146, 90, 0.25);
+        pointer-events: none;
+    }
+    .auth-card::after {
+        content: '';
+        position: absolute;
+        inset: 16px;
+        border: 1px solid transparent;
+        pointer-events: none;
+        transition: inset .5s cubic-bezier(.2,.7,.2,1), border-color .5s ease;
+    }
+    .auth-card:hover::after { inset: 12px; border-color: rgba(179,146,90,.3); }
+
+    .auth-monogram {
+        width: 3.75rem; height: 3.75rem;
+        margin: 0 auto 1rem;
+        display: grid; place-items: center;
+        border-radius: 9999px;
+        background: linear-gradient(145deg, var(--gold-light), var(--gold) 55%, var(--gold-dark));
+        color: var(--ink);
+        font-family: 'Bodoni Moda', Georgia, serif;
+        font-size: 1.3rem;
+        letter-spacing: .04em;
+    }
+
+    /* Поля: только нижняя линия, при фокусе — золото.
+       !important нужен, потому что класс .dotted-input навешивается
+       из виджета формы (бэкенд), и там могут быть свои классы. */
+    .auth-card .dotted-input {
+        width: 100% !important;
+        border: none !important;
+        border-bottom: 1px solid var(--gold-dark) !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        outline: none !important;
+        padding: 0.85rem 0 !important;
+        font-family: 'Jost', system-ui, sans-serif;
+        font-size: 0.95rem;
+        letter-spacing: 0.04em;
+        color: var(--ink);
+        transition: border-color .3s ease, box-shadow .3s ease;
+    }
+    .auth-card .dotted-input:focus {
+        border-bottom-color: var(--garnet) !important;
+        box-shadow: 0 1px 0 0 var(--gold) !important;
+    }
+    .auth-card .dotted-input::placeholder {
+        color: rgba(23, 18, 15, 0.45);
+        font-weight: 400;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+    }
+    .auth-card .dotted-input.border-red-500 {
+        border-bottom-color: var(--garnet) !important;
+    }
+
+    /* Ошибки полей (Django рендерит <ul class="errorlist">) */
+    .auth-card .field-error,
+    .auth-card .field-error ul {
+        list-style: none;
+        margin: 0.4rem 0 0;
+        padding: 0;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: var(--garnet);
+    }
+
+    .auth-card .btn-gold,
+    .auth-card .btn-outline {
+        width: 100%;
+        text-align: center;
+        cursor: pointer;
+    }
+    .auth-card .btn-gold { border: 0; }
+</style>
+
+<div class="flex items-center justify-center px-4 py-16 md:py-24 min-h-[70vh]">
+    <div class="auth-card w-full max-w-md px-8 py-12 md:px-12">
+
+        <div class="text-center mb-10">
+            <div class="auth-monogram">ERD</div>
+            <h1 class="hero-title text-4xl md:text-5xl">Create an account</h1>
+            <div class="gold-rule mx-auto mt-5 w-24"></div>
+            <p class="mt-5 text-sm text-ink/60 font-light">Join PREMIUM-JEWELER</p>
+        </div>
+
+        {% if messages %}
+            <div class="mb-6 border border-garnet/40 bg-garnet/5 px-4 py-3">
+                {% for message in messages %}
+                    <div class="text-garnet text-xs tracking-wider text-center">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form id="createAccountForm" method="post" class="space-y-7" 
+              hx-post="{% url 'users:register' %}" 
+              hx-target="#main-content">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.first_name.id_for_label }}" class="sr-only">First name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <div class="field-error">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.last_name.id_for_label }}" class="sr-only">Last name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <div class="field-error">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.email.id_for_label }}" class="sr-only">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <div class="field-error">{{ form.email.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.password1.id_for_label }}" class="sr-only">Password</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                    <div class="field-error">{{ form.password1.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.password2.id_for_label }}" class="sr-only">Confirm password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <div class="field-error">{{ form.password2.errors }}</div>
+                {% endif %}
+                <div id="passwordError" class="field-error hidden">
+                    Passwords do not match
+                </div>
+            </div>
+
+            <div class="pt-4 space-y-4">
+                <button type="submit" class="btn-gold">Create an account</button>
+
+                <div class="flex items-center gap-4 text-ink/40">
+                    <span class="flex-1 gold-rule"></span>
+                    <span class="text-[0.7rem] tracking-[0.25em] uppercase">or</span>
+                    <span class="flex-1 gold-rule"></span>
+                </div>
+
+                <a href="{% url 'users:login' %}"
+                   hx-get="{% url 'users:login' %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="btn-outline">
+                    Log in
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('createAccountForm');
+    const passwordInput = document.getElementById('id_password1');
+    const confirmPasswordInput = document.getElementById('id_password2');
+    const passwordError = document.getElementById('passwordError');
+
+    function validatePasswords() {
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        if (confirmPassword && password !== confirmPassword) {
+            passwordError.classList.remove('hidden');
+            confirmPasswordInput.classList.add('border-red-500');
+            return false;
+        } else {
+            passwordError.classList.add('hidden');
+            confirmPasswordInput.classList.remove('border-red-500');
+            return true;
+        }
+    }
+
+    confirmPasswordInput.addEventListener('input', validatePasswords);
+    passwordInput.addEventListener('input', () => {
+        if (confirmPasswordInput.value) {
+            validatePasswords();
+        }
+    });
+
+    form.addEventListener('submit', function(e) {
+        if (!validatePasswords()) {
+            e.preventDefault();
+        }
+    });
+
+    document.querySelectorAll('.dotted-input').forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('focused');
+        });
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('focused');
+        });
+    });
+</script>
+{% endblock %}

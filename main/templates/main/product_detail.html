@@ -1,0 +1,297 @@
+<div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-10 lg:py-16">
+    <!-- Breadcrumb -->
+    <div class="mb-8">
+        <nav class="text-xs tracking-[0.14em] uppercase text-ink/50">
+            <a href="{% url 'main:index' %}"
+               hx-get="{% url 'main:index' %}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="hover:text-garnet transition-colors">HOME</a>
+            <span class="mx-2 text-gold">/</span>
+            <a href="{% url 'main:catalog' product.category.slug %}"
+               hx-get="{% url 'main:catalog' product.category.slug %}"
+               hx-target="#main-content"
+               hx-push-url="true"
+               class="hover:text-garnet transition-colors">{{ product.category.name|upper }}</a>
+            <span class="mx-2 text-gold">/</span>
+            <span class="text-ink">{{ product.name|upper }}</span>
+        </nav>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+        <!-- Product Images -->
+        <div class="space-y-3">
+            <!-- Main Image -->
+            <div class="pd-main-image aspect-square overflow-hidden bg-[#e4e0db] relative">
+                {% if product.main_image %}
+                    <img src="{{ product.main_image.url }}"
+                         alt="{{ product.name }}"
+                         class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <span class="hero-title text-ink/30 text-lg tracking-wide">No Image</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Additional Images -->
+            {% if product.images.all %}
+            <div class="grid grid-cols-3 gap-3">
+                {% for image in product.images.all %}
+                <div class="pd-thumb aspect-square overflow-hidden bg-[#e4e0db] cursor-pointer">
+                    <img src="{{ image.image.url }}"
+                         alt="{{ product.name }}"
+                         class="w-full h-full object-cover">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Product Info -->
+        <div class="space-y-8">
+            <div>
+                <p class="text-xs tracking-[0.2em] uppercase text-gold-dark mb-3">{{ product.category.name|upper }}</p>
+                <h1 class="hero-title text-3xl sm:text-4xl text-ink mb-3">
+                    {{ product.name|upper }}
+                </h1>
+                <p class="text-sm tracking-[0.1em] uppercase text-ink/50 mb-5">{{ product.color|upper }}</p>
+                <p class="hero-title text-2xl text-garnet">${{ product.price }}</p>
+            </div>
+
+            <div class="gold-rule"></div>
+
+            <!-- Sizes -->
+            {% if product.product_sizes.all %}
+            <div>
+                <h3 class="text-xs font-medium tracking-[0.2em] uppercase text-ink mb-4">Size</h3>
+                <div class="grid grid-cols-4 gap-2">
+                    {% for product_size in product.product_sizes.all %}
+                    <div class="size-option">
+                        <input type="radio"
+                               name="size"
+                               class="size-radio hidden"
+                               id="size-{{ product_size.id }}"
+                               value="{{ product_size.id }}"
+                               data-size="{{ product_size.size.name }}"
+                               {% if product_size.stock == 0 %}disabled{% endif %}
+                               {% if forloop.first and product_size.stock > 0 %}checked{% endif %}>
+                        <label for="size-{{ product_size.id }}"
+                               class="block border border-ink/25 py-2.5 px-3 text-sm font-medium text-center cursor-pointer transition-colors hover:border-gold {% if product_size.stock == 0 %}opacity-40 cursor-not-allowed{% endif %}">
+                            {{ product_size.size.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div>
+                <h3 class="text-xs font-medium tracking-[0.2em] uppercase text-ink mb-3">Size</h3>
+                <p class="text-sm text-ink/50">No sizes available</p>
+            </div>
+            {% endif %}
+
+            <!-- Add to Cart -->
+            <div class="space-y-3 pt-2">
+                <button id="add-to-cart-btn"
+                        type="button"
+                        class="btn-gold w-full text-center"
+                        data-add-url="{% url 'cart:add_to_cart' product.slug %}"
+                        {% if not product.product_sizes.all %}disabled{% endif %}>
+                    Add to cart
+                </button>
+
+                <button type="button" class="btn-outline w-full text-center">
+                    Add to wishlist
+                </button>
+            </div>
+
+            <!-- Product Details -->
+            <div class="border-t border-gold/25 pt-6">
+                <h3 class="text-xs font-medium tracking-[0.2em] uppercase text-ink mb-3">Details</h3>
+                <div class="prose prose-sm text-ink/60 font-light">
+                    <div>{{ product.description|linebreaks }}</div>
+                    <p>Created: {{ product.created_at|date:"F d, Y" }}</p>
+                </div>
+            </div>
+
+            <!-- Care Instructions -->
+            <div class="border-t border-gold/25 pt-6">
+                <h3 class="text-xs font-medium tracking-[0.2em] uppercase text-ink mb-3">Care</h3>
+                <div class="prose prose-sm text-ink/60 font-light">
+                    <p>Professional dry clean only</p>
+                    <p>Do not bleach</p>
+                    <p>Iron at low temperature</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    {% if related_products %}
+    <div class="mt-20 border-t border-gold/25 pt-16">
+        <h2 class="hero-title text-2xl sm:text-3xl text-ink mb-10 text-center">You may also like</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {% for related_product in related_products %}
+            <a class="product-card group block cursor-pointer"
+               href="{% url 'main:product_detail' related_product.slug %}"
+               hx-get="{% url 'main:product_detail' related_product.slug %}"
+               hx-target="#main-content"
+               hx-push-url="true">
+                <div class="image-wrap aspect-square overflow-hidden bg-[#e4e0db] mb-4 relative">
+                    {% if related_product.main_image %}
+                        <img src="{{ related_product.main_image.url }}"
+                             alt="{{ related_product.name }}"
+                             class="product-image w-full h-full object-cover">
+                    {% else %}
+                        <div class="product-image w-full h-full flex items-center justify-center">
+                            <span class="text-ink/30 text-sm">No Image</span>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="text-center">
+                    <h3 class="text-sm font-medium text-ink mb-1 tracking-[0.04em]">{{ related_product.name|upper }}</h3>
+                    <p class="text-xs tracking-[0.12em] uppercase text-ink/50 mb-1">{{ related_product.color|upper }}</p>
+                    <p class="text-sm font-medium text-garnet">${{ related_product.price }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .pd-main-image::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: 1px solid rgba(179, 146, 90, .35);
+        pointer-events: none;
+    }
+    .pd-thumb {
+        transition: opacity .25s ease, box-shadow .25s ease;
+    }
+    .pd-thumb:hover {
+        opacity: .82;
+        box-shadow: 0 0 0 1px var(--gold);
+    }
+
+    .size-radio:checked + label {
+        background-color: var(--ink) !important;
+        color: var(--gold-light) !important;
+        border-color: var(--ink) !important;
+    }
+    .size-radio:disabled + label {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    #add-to-cart-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .product-card {
+        transition: transform .3s ease;
+    }
+    .product-card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+
+<script>
+// IIFE: ничего не попадает в глобальную область, поэтому повторное
+// выполнение скрипта при htmx-свопе не вызывает "already been declared"
+// и не оставляет в window старую addToCart со slug предыдущего товара.
+(() => {
+    const btn = document.getElementById('add-to-cart-btn');
+    if (!btn) return;
+
+    const radios = Array.from(document.querySelectorAll('.size-radio'));
+
+    function getCookie(name) {
+        const match = document.cookie
+            .split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith(name + '='));
+        return match ? decodeURIComponent(match.substring(name.length + 1)) : null;
+    }
+
+    function showNotification(message) {
+        const el = document.createElement('div');
+        el.className = 'fixed top-20 right-4 bg-ink text-gold-light px-6 py-3 shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+        el.style.border = '1px solid var(--gold-dark)';
+        el.style.fontSize = '.85rem';
+        el.style.letterSpacing = '.04em';
+        el.textContent = message;
+        document.body.appendChild(el);
+        setTimeout(() => { el.style.transform = 'translateX(0)'; }, 10);
+        setTimeout(() => {
+            el.style.transform = 'translateX(100%)';
+            setTimeout(() => el.remove(), 300);
+        }, 3000);
+    }
+
+    function getSelectedSizeId() {
+        const checked = radios.find(r => r.checked && !r.disabled);
+        return checked ? checked.value : null;
+    }
+
+    // Автовыбор первого доступного размера
+    if (!getSelectedSizeId()) {
+        const first = radios.find(r => !r.disabled);
+        if (first) first.checked = true;
+    }
+    // Нет ни одного доступного размера
+    if (!getSelectedSizeId()) {
+        btn.disabled = true;
+    }
+
+    // Добавление в корзину: URL берётся из кнопки именно этой страницы
+    btn.addEventListener('click', () => {
+        const sizeId = getSelectedSizeId();
+        if (!sizeId) {
+            showNotification('Please select a size');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('size_id', sizeId);
+        formData.append('quantity', '1');
+
+        fetch(btn.dataset.addUrl, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showNotification(data.error);
+                return;
+            }
+            if (typeof updateHeaderCartCount === 'function') {
+                updateHeaderCartCount(data.total_items);
+            }
+            showNotification(data.message);
+            // Подгружает свежую корзину и открывает её
+            // (если открывать не нужно — замените на htmx.ajax('GET', ..., {target: '#cart-container', swap: 'innerHTML'}))
+            openCart();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error adding to cart');
+        });
+    });
+
+    // Миниатюры: смена главного изображения
+    document.querySelectorAll('.pd-thumb img').forEach(img => {
+        img.addEventListener('click', () => {
+            const main = document.querySelector('.pd-main-image img');
+            if (main) main.src = img.src;
+        });
+    });
+})();
+</script>

@@ -1,0 +1,37 @@
+<div id="cart-modal" class="fixed right-0 top-0 h-screen w-full max-w-md bg-pearl shadow-2xl z-50 transition-transform duration-300 border-l border-gold/30">
+    <div class="h-full flex flex-col">
+        <!-- Cart Header -->
+        <div class="flex justify-between items-center p-6 border-b border-gold/25">
+            <h1 class="hero-title text-xl tracking-[0.04em] text-ink">CART <span class="text-gold-dark">(<span id="cart-count">{{ cart.total_items }}</span>)</span></h1>
+            <button type="button" onclick="closeCart()" class="text-ink/50 hover:text-garnet transition-colors text-2xl leading-none" aria-label="Close cart">&times;</button>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <div id="cart-items" class="space-y-8">
+                {% for item in cart_items %}
+                    {% include 'cart/cart_item.html' %}
+                {% empty %}
+                    <div class="text-center py-20">
+                        <p class="hero-title text-lg text-ink mb-4">Your cart is empty</p>
+                        <button type="button" onclick="closeCart()" class="util-link text-xs underline underline-offset-4 decoration-gold hover:text-garnet transition-colors">Continue shopping</button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Cart Footer -->
+        <div id="cart-summary" class="border-t border-gold/25 p-6">
+            {% if cart_items %}
+                {% include 'cart/cart_summary.html' %}
+            {% else %}
+                <div class="text-center text-ink/50">
+                    <p>Your cart is empty</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Cart Overlay -->
+<div id="cart-overlay" class="fixed inset-0 bg-ink/60 backdrop-blur-sm z-40 transition-all duration-300" onclick="closeCart()"></div>

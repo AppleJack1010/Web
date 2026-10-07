@@ -1,0 +1,423 @@
+{% load static %}
+{% load l10n %}
+
+<style>
+    /* Стили чекаута. Селекторы через #order-form перебивают классы виджетов Django-формы,
+       поэтому forms.py менять не нужно. */
+    .co-wrap { max-width: 78rem; margin: 0 auto; }
+
+    .co-steps { display: flex; align-items: center; gap: .75rem; font-size: .8rem; letter-spacing: .08em; color: rgba(23,18,15,.5); }
+    .co-steps .done, .co-steps .now { color: var(--ink); }
+    .co-steps .now { color: var(--garnet); border-bottom: 1px solid var(--gold); padding-bottom: 2px; }
+    .co-steps .sep { width: 1.5rem; height: 1px; background: var(--gold); opacity: .6; }
+
+    .co-section { background: #f7f5f2; border: 1px solid rgba(179,146,90,.35); padding: 1.75rem; position: relative; }
+    .co-section::before { content: ''; position: absolute; inset: 6px; border: 1px solid rgba(179,146,90,.18); pointer-events: none; }
+    .co-section > * { position: relative; }
+    .co-title { font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.5rem; font-weight: 400; margin-bottom: 1.25rem; }
+
+    .co-label { display: block; font-size: .8rem; letter-spacing: .06em; color: rgba(23,18,15,.7); margin-bottom: .35rem; }
+
+    #order-form input:not([type=checkbox]):not([type=hidden]):not([type=radio]),
+    #order-form select,
+    #order-form textarea {
+        width: 100%;
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid rgba(23,18,15,.35);
+        border-radius: 0;
+        padding: .65rem .1rem;
+        font-family: 'Jost', system-ui, sans-serif;
+        font-size: .95rem;
+        color: var(--ink);
+        box-shadow: none;
+        outline: none;
+        transition: border-color .25s ease, background .25s ease;
+    }
+    #order-form input:not([type=checkbox]):focus,
+    #order-form select:focus,
+    #order-form textarea:focus { border-bottom-color: var(--gold-dark); background: rgba(220,196,154,.12); }
+    #order-form .is-invalid { border-bottom-color: #9b1c31 !important; background: rgba(155,28,49,.05) !important; }
+    #order-form .field-error { color: #9b1c31; font-size: .8rem; margin-top: .3rem; }
+    #order-form .field-error ul { list-style: none; margin: 0; padding: 0; }
+
+    .co-check { display: flex; align-items: center; gap: .6rem; cursor: pointer; font-size: .875rem; }
+    .co-check input { appearance: none; -webkit-appearance: none; width: 1.05rem; height: 1.05rem; border: 1px solid var(--ink); background: transparent; display: grid; place-content: center; transition: background .2s ease, border-color .2s ease; flex-shrink: 0; }
+    .co-check input::after { content: ''; width: .5rem; height: .5rem; background: var(--gold-light); transform: scale(0); transition: transform .15s ease; }
+    .co-check input:checked { background: var(--garnet); border-color: var(--garnet); }
+    .co-check input:checked::after { transform: scale(1); }
+
+    .pay-btn {
+        position: relative;
+        padding: 1.05rem 1.25rem;
+        font-size: .8rem;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: background .3s ease, color .3s ease, border-color .3s ease, opacity .3s ease;
+    }
+    .pay-btn.primary { background: var(--garnet); color: var(--gold-light); border: 1px solid var(--garnet); }
+    .pay-btn.primary:hover { background: var(--garnet-deep, #3f101d); }
+    .pay-btn.secondary { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+    .pay-btn.secondary:hover { background: var(--ink); color: var(--gold-light); }
+    .pay-btn:disabled { opacity: .55; cursor: wait; }
+    .pay-btn .spin { display: none; width: .9rem; height: .9rem; border: 1.5px solid currentColor; border-right-color: transparent; border-radius: 50%; margin-left: .6rem; vertical-align: -2px; animation: coSpin .7s linear infinite; }
+    .pay-btn.loading .spin { display: inline-block; }
+    @keyframes coSpin { to { transform: rotate(360deg); } }
+
+    .co-summary { background: var(--ink); color: #e6dfd2; padding: 2rem; position: sticky; top: 6rem; }
+    .co-summary::before { content: ''; position: absolute; inset: 8px; border: 1px solid rgba(179,146,90,.4); pointer-events: none; }
+    .co-summary > * { position: relative; }
+    .co-item-img { width: 4.5rem; height: 4.5rem; object-fit: cover; background: #2a221d; border: 1px solid rgba(179,146,90,.45); }
+    .co-qty { position: absolute; top: -.5rem; right: -.5rem; min-width: 1.25rem; height: 1.25rem; padding: 0 .3rem; display: grid; place-items: center; background: var(--gold); color: var(--ink); font-size: .7rem; font-weight: 500; border-radius: 9999px; }
+    .co-ship-bar { height: 3px; background: rgba(220,196,154,.2); overflow: hidden; }
+    .co-ship-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold-dark), var(--gold-light)); transition: width .8s cubic-bezier(.2,.7,.2,1); }
+
+    .co-summary-toggle { display: none; }
+    @media (max-width: 1023px) {
+        .co-summary { position: relative; top: 0; padding: 1.25rem; }
+        .co-summary-toggle { display: flex; width: 100%; justify-content: space-between; align-items: center; background: none; border: 0; color: inherit; font-size: .9rem; letter-spacing: .06em; cursor: pointer; }
+        .co-summary-body { display: none; margin-top: 1.25rem; }
+        .co-summary.open .co-summary-body { display: block; }
+        .co-summary-toggle svg { transition: transform .3s ease; }
+        .co-summary.open .co-summary-toggle svg { transform: rotate(180deg); }
+    }
+    @media (min-width: 1024px) { .co-summary-body { display: block !important; } }
+</style>
+
+<main class="mx-auto px-4 sm:px-6 lg:px-10 py-10 md:py-14">
+    <div class="co-wrap">
+
+        <!-- Breadcrumb + steps -->
+        <div class="mb-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <nav class="flex items-center space-x-2 text-xs tracking-[0.18em] text-ink/60" aria-label="Breadcrumb">
+                <a href="{% url 'main:index' %}"
+                   hx-get="{% url 'main:index' %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="hover:text-garnet transition-colors">HOME</a>
+                <span class="text-gold">/</span>
+                <span class="text-ink font-medium">CHECKOUT</span>
+            </nav>
+            <ol class="co-steps" aria-label="Order steps">
+                <li class="done">1 Cart</li>
+                <li class="sep" aria-hidden="true"></li>
+                <li class="now" aria-current="step">2 Details</li>
+                <li class="sep" aria-hidden="true"></li>
+                <li>3 Payment</li>
+            </ol>
+        </div>
+
+        <div class="grid lg:grid-cols-[1fr_26rem] gap-10 lg:gap-14 items-start">
+
+            <!-- Order summary: first on mobile (collapsible), right column on desktop -->
+            <aside class="co-summary lg:order-2" id="coSummary">
+                <button type="button" class="co-summary-toggle" id="coSummaryToggle" aria-expanded="false" aria-controls="coSummaryBody">
+                    <span class="font-display text-lg">Your order</span>
+                    <span class="flex items-center gap-3">
+                        <span class="text-gold-light">€{{ total_price|floatformat:2 }}</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M1 4l5 5 5-5"/></svg>
+                    </span>
+                </button>
+
+                <div class="co-summary-body" id="coSummaryBody">
+                    <h2 class="hero-title text-2xl text-gold-light mb-6 hidden lg:block">Your order</h2>
+
+                    <div class="space-y-5 mb-6">
+                        {% for item in cart_items %}
+                        <div class="flex items-center gap-4">
+                            <div class="relative flex-shrink-0">
+                                <img src="{{ item.product.main_image.url }}" alt="{{ item.product.name }}" class="co-item-img">
+                                <span class="co-qty">{{ item.quantity }}</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-display text-base leading-snug">{{ item.product.name }}</h3>
+                                <p class="text-xs text-pearl/55 mt-0.5">{{ item.product_size.size.name }}</p>
+                            </div>
+                            <span class="text-sm text-gold-light whitespace-nowrap">€{{ item.product.price|floatformat:2 }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="order-summary" class="space-y-3 border-t border-gold/30 pt-5 text-sm">
+                        <div class="flex justify-between">
+                            <span>Subtotal · {{ cart.total_items }} item{{ cart.total_items|pluralize }}</span>
+                            <span>€{{ total_price|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Shipping</span>
+                            <span class="text-pearl/55">Calculated at next step</span>
+                        </div>
+                        <div class="flex justify-between items-baseline pt-4 border-t border-gold/30">
+                            <span class="font-display text-xl">Total</span>
+                            <span class="text-right">
+                                <span class="text-xs text-pearl/55 mr-1">EUR</span>
+                                <span class="font-display text-2xl text-gold-light">€{{ total_price|floatformat:2 }}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Free shipping progress (порог 500 меняется в data-threshold) -->
+                    <div class="mt-6" id="shipProgress" data-total="{{ total_price|unlocalize }}" data-threshold="500">
+                        <p class="text-xs text-pearl/70 mb-2" id="shipText"></p>
+                        <div class="co-ship-bar"><span id="shipBar"></span></div>
+                    </div>
+
+                    <ul class="mt-6 pt-5 border-t border-gold/30 space-y-2 text-xs text-pearl/60">
+                        <li>Insured shipping on every parcel</li>
+                        <li>30-day returns, lifetime polishing</li>
+                        <li>Every piece is hallmarked</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Form -->
+            <div class="lg:order-1">
+                <form method="post" id="order-form" hx-post="{% url 'orders:checkout' %}" hx-target="#main-content" hx-swap="outerHTML" novalidate class="space-y-6">
+                    {% csrf_token %}
+
+                    <!-- Contact -->
+                    <section class="co-section">
+                        <h2 class="co-title">Contact</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="{{ form.email.id_for_label }}" class="co-label">Email</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}<div class="field-error">{{ form.email.errors }}</div>{% endif %}
+                            </div>
+                            <label class="co-check">
+                                <input type="checkbox" name="newsletter">
+                                <span>Send me news and offers</span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <!-- Shipping -->
+                    <section class="co-section">
+                        <h2 class="co-title">Shipping address</h2>
+                        <div class="space-y-5">
+                            <div>
+                                <label for="{{ form.country.id_for_label }}" class="co-label">Country / region</label>
+                                {{ form.country }}
+                                {% if form.country.errors %}<div class="field-error">{{ form.country.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                                <div>
+                                    <label for="{{ form.first_name.id_for_label }}" class="co-label">First name</label>
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}<div class="field-error">{{ form.first_name.errors }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label for="{{ form.last_name.id_for_label }}" class="co-label">Last name</label>
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}<div class="field-error">{{ form.last_name.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="{{ form.address1.id_for_label }}" class="co-label">Address</label>
+                                {{ form.address1 }}
+                                {% if form.address1.errors %}<div class="field-error">{{ form.address1.errors }}</div>{% endif %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.address2.id_for_label }}" class="co-label">Apartment, suite, etc. (optional)</label>
+                                {{ form.address2 }}
+                                {% if form.address2.errors %}<div class="field-error">{{ form.address2.errors }}</div>{% endif %}
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                <div>
+                                    <label for="{{ form.city.id_for_label }}" class="co-label">City</label>
+                                    {{ form.city }}
+                                    {% if form.city.errors %}<div class="field-error">{{ form.city.errors }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label for="{{ form.province.id_for_label }}" class="co-label">State / province</label>
+                                    {{ form.province }}
+                                    {% if form.province.errors %}<div class="field-error">{{ form.province.errors }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label for="{{ form.postal_code.id_for_label }}" class="co-label">Postal code</label>
+                                    {{ form.postal_code }}
+                                    {% if form.postal_code.errors %}<div class="field-error">{{ form.postal_code.errors }}</div>{% endif %}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="{{ form.phone.id_for_label }}" class="co-label">Phone</label>
+                                {{ form.phone }}
+                                {% if form.phone.errors %}<div class="field-error">{{ form.phone.errors }}</div>{% endif %}
+                                <p class="text-xs text-ink/50 mt-1">The courier will call you about the delivery.</p>
+                            </div>
+
+                            <label class="co-check">
+                                <input type="checkbox" name="save_info" id="saveInfo">
+                                <span>Save this information for next time</span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <!-- Payment -->
+                    <section class="co-section">
+                        <h2 class="co-title">Payment</h2>
+                        <p class="text-sm text-ink/60 mb-5">Choose how you would like to pay. You will be redirected to a secure page to finish.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <button type="submit"
+                                    form="order-form"
+                                    name="create_order"
+                                    value="create_order"
+                                    data-payment-provider="stripe"
+                                    class="pay-btn primary payment-button"
+                                    onclick="document.getElementById('payment_provider').value='stripe'">
+                                Pay with Stripe<span class="spin" aria-hidden="true"></span>
+                            </button>
+                            <button type="submit"
+                                    form="order-form"
+                                    name="create_order"
+                                    value="create_order"
+                                    data-payment-provider="heleket"
+                                    class="pay-btn secondary payment-button"
+                                    onclick="document.getElementById('payment_provider').value='heleket'">
+                                Pay with Heleket<span class="spin" aria-hidden="true"></span>
+                            </button>
+                            <input type="hidden" name="payment_provider" id="payment_provider">
+                        </div>
+                    </section>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <a href="#" class="text-sm text-ink/60 underline decoration-gold underline-offset-4 hover:text-garnet transition-colors">Refund policy</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // IIFE вместо DOMContentLoaded: страница подгружается через HTMX, и это событие к тому моменту уже прошло
+    (function () {
+        const form = document.getElementById('order-form');
+        if (!form) return;
+
+        const providerInput = document.getElementById('payment_provider');
+        const payButtons = form.querySelectorAll('.payment-button');
+        const required = ['email', 'first_name', 'last_name', 'address1', 'city', 'country', 'phone'];
+        const STORE_KEY = 'checkout_info_v1';
+        const savedFields = ['email', 'first_name', 'last_name', 'address1', 'address2', 'city', 'province', 'postal_code', 'country', 'phone'];
+        const toast = (m) => (window.showToast ? window.showToast(m) : alert(m));
+
+        /* ---- Выбор провайдера ---- */
+        payButtons.forEach(btn => btn.addEventListener('click', function () {
+            providerInput.value = this.getAttribute('data-payment-provider');
+        }));
+
+        /* ---- Подсветка ошибок ---- */
+        function mark(field, bad) {
+            field.classList.toggle('is-invalid', bad);
+            field.setAttribute('aria-invalid', bad ? 'true' : 'false');
+        }
+        required.forEach(name => {
+            const f = form.querySelector(`[name="${name}"]`);
+            if (!f) return;
+            f.addEventListener('input', () => { if (f.value.trim()) mark(f, false); });
+            f.addEventListener('blur', () => mark(f, !f.value.trim()));
+        });
+
+        function validate() {
+            let firstBad = null;
+            required.forEach(name => {
+                const f = form.querySelector(`[name="${name}"]`);
+                if (!f) return;
+                const bad = !f.value.trim();
+                mark(f, bad);
+                if (bad && !firstBad) firstBad = f;
+            });
+            const email = form.querySelector('[name="email"]');
+            if (email && email.value.trim() && !/^\S+@\S+\.\S+$/.test(email.value.trim())) {
+                mark(email, true);
+                firstBad = firstBad || email;
+            }
+            if (firstBad) {
+                firstBad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstBad.focus({ preventScroll: true });
+                toast('Please fill in the highlighted fields');
+                return false;
+            }
+            if (!['stripe', 'heleket'].includes(providerInput.value)) {
+                toast('Please choose a payment method');
+                return false;
+            }
+            return true;
+        }
+
+        // Отмена HTMX-запроса при невалидной форме (preventDefault на submit его не останавливает)
+        form.addEventListener('htmx:beforeRequest', function (e) {
+            if (!validate()) { e.preventDefault(); return; }
+            persist();
+            setLoading(true);
+        });
+        form.addEventListener('submit', function (e) { if (!validate()) e.preventDefault(); });
+        form.addEventListener('htmx:afterRequest', () => setLoading(false));
+        form.addEventListener('htmx:responseError', () => { setLoading(false); toast('Something went wrong. Please try again.'); });
+
+        /* ---- Состояние загрузки, защита от двойной отправки ---- */
+        function setLoading(on) {
+            payButtons.forEach(b => {
+                b.disabled = on;
+                b.classList.toggle('loading', on && b.getAttribute('data-payment-provider') === providerInput.value);
+            });
+        }
+
+        /* ---- Телефон: только цифры и + ( ) - пробел ---- */
+        const phone = form.querySelector('[name="phone"]');
+        if (phone) phone.addEventListener('input', () => { phone.value = phone.value.replace(/[^\d+()\-\s]/g, ''); });
+
+        /* ---- Запоминание данных (только в браузере) ---- */
+        const saveBox = document.getElementById('saveInfo');
+        function persist() {
+            try {
+                if (saveBox && saveBox.checked) {
+                    const data = {};
+                    savedFields.forEach(n => { const f = form.querySelector(`[name="${n}"]`); if (f) data[n] = f.value; });
+                    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+                } else {
+                    localStorage.removeItem(STORE_KEY);
+                }
+            } catch (e) {}
+        }
+        try {
+            const data = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+            if (data) {
+                savedFields.forEach(n => {
+                    const f = form.querySelector(`[name="${n}"]`);
+                    if (f && !f.value && data[n]) f.value = data[n];
+                });
+                if (saveBox) saveBox.checked = true;
+            }
+        } catch (e) {}
+
+        /* ---- Прогресс до бесплатной доставки ---- */
+        const sp = document.getElementById('shipProgress');
+        if (sp) {
+            const total = parseFloat(sp.dataset.total) || 0;
+            const limit = parseFloat(sp.dataset.threshold) || 500;
+            const left = Math.max(limit - total, 0);
+            document.getElementById('shipText').textContent = left > 0
+                ? `Add €${left.toFixed(2)} more for free insured shipping`
+                : 'Your order qualifies for free insured shipping';
+            requestAnimationFrame(() => {
+                document.getElementById('shipBar').style.width = Math.min(total / limit * 100, 100) + '%';
+            });
+        }
+
+        /* ---- Сворачиваемая сводка заказа на мобильных ---- */
+        const summary = document.getElementById('coSummary');
+        const toggle = document.getElementById('coSummaryToggle');
+        if (toggle) toggle.addEventListener('click', () => {
+            const open = summary.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', open);
+        });
+    })();
+</script>

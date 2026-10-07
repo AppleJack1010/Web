@@ -1,0 +1,93 @@
+{% block content %}
+<main class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-10 py-10 lg:py-14">
+    <!-- Breadcrumb and Filters -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 sm:mb-14 gap-4 sm:gap-0">
+        <div>
+            <p class="text-xs tracking-[0.2em] uppercase text-gold-dark mb-2">Collection</p>
+            <h2 class="hero-title text-2xl sm:text-3xl text-ink">
+                {% if current_category %}
+                    {{ current_category|upper }} <span class="text-gold mx-1">&middot;</span> New arrivals
+                {% else %}
+                    All products
+                {% endif %}
+            </h2>
+        </div>
+        <button class="btn-outline w-full sm:w-auto" 
+                hx-get="{% if current_category %}{% url 'main:catalog' current_category %}{% else %}{% url 'main:catalog_all' %}{% endif %}?show_filters=true&color={{ filter_params.color|urlencode }}&min_price={{ filter_params.min_price|urlencode }}&max_price={{ filter_params.max_price|urlencode }}&size={{ filter_params.size|urlencode }}" 
+                hx-target="#filter-modal-content"
+                hx-swap="innerHTML"
+                hx-on::after-request="document.getElementById('filter-modal').classList.remove('hidden')">
+            Filters
+        </button>
+    </div>
+
+    <!-- Filter Modal Container -->
+    <div id="filter-modal" class="fixed inset-0 bg-ink/60 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div id="filter-modal-content" class="bg-pearl max-w-md w-full border border-gold/40 shadow-2xl"></div>
+    </div>
+
+    <!-- Product Grid -->
+    {% if products %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12 sm:gap-x-8 lg:gap-x-12">
+        {% for product in products %}
+        <div class="product-card group cursor-pointer" 
+             hx-get="{% url 'main:product_detail' product.slug %}"
+             hx-target="#main-content"
+             hx-push-url="true">
+            <div class="image-wrap aspect-square overflow-hidden bg-[#e4e0db] mb-4 relative">
+                {% if product.main_image %}
+                    <img src="{{ product.main_image.url }}" 
+                         alt="{{ product.name }}" 
+                         class="product-image w-full h-full object-cover">
+                {% else %}
+                    <div class="product-image w-full h-full flex items-center justify-center">
+                        <span class="text-ink/30 text-sm">No Image</span>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="text-center">
+                <h3 class="text-sm font-medium text-ink mb-1 tracking-[0.04em] uppercase">{{ product.name }}</h3>
+                <p class="text-xs text-ink/50 mb-1 tracking-[0.12em] uppercase">{{ product.color }}</p>
+                <p class="text-sm font-medium text-garnet">${{ product.price }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-24">
+        <h3 class="hero-title text-2xl sm:text-3xl text-ink mb-4">No products found</h3>
+        <p class="text-ink/60 font-light mb-8">
+            {% if current_category %}
+                No products available in this category yet.
+            {% else %}
+                No products available at the moment.
+            {% endif %}
+        </p>
+        <a href="{% url 'main:index' %}" 
+           hx-get="{% url 'main:index' %}" 
+           hx-target="#main-content" 
+           hx-push-url="true"
+           class="btn-gold">
+            Back to home
+        </a>
+    </div>
+    {% endif %}
+</main>
+
+<script>
+    // Product card hover and click functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const productCards = document.querySelectorAll('.product-card');
+        productCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,956 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %} PREMIUM-JEWELER {% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;1,6..96,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pearl: '#eeecea',
+                        ink: '#17120f',
+                        garnet: { DEFAULT: '#5b1a2b', deep: '#3f101d' },
+                        gold: { DEFAULT: '#b3925a', light: '#dcc49a', dark: '#8a6c3a' }
+                    },
+                    fontFamily: {
+                        display: ['"Bodoni Moda"', 'Georgia', 'serif'],
+                        sans: ['Jost', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+    <style>
+        :root {
+            --pearl: #eeecea;
+            --ink: #17120f;
+            --garnet: #5b1a2b;
+            --gold: #b3925a;
+            --gold-light: #dcc49a;
+            --gold-dark: #8a6c3a;
+            --header-h: 5rem;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Jost', system-ui, sans-serif;
+            background: var(--pearl);
+            color: var(--ink);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::selection { background: var(--garnet); color: var(--gold-light); }
+
+        :focus-visible {
+            outline: 2px solid var(--gold);
+            outline-offset: 3px;
+        }
+
+        /* ---------- Top marquee ---------- */
+        .topbar {
+            position: relative;
+            background: var(--garnet);
+            color: var(--gold-light);
+            overflow: hidden;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+        }
+        .topbar::before,
+        .topbar::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 4rem;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .topbar::before { left: 0;  background: linear-gradient(90deg, var(--garnet), transparent); }
+        .topbar::after  { right: 0; background: linear-gradient(270deg, var(--garnet), transparent); }
+
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: marquee 55s linear infinite;
+            will-change: transform;
+        }
+        .topbar:hover .marquee-track { animation-play-state: paused; }
+
+        .marquee-group { display: flex; flex-shrink: 0; }
+        .marquee-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.65rem 0;
+            white-space: nowrap;
+        }
+        .marquee-item::after {
+            content: '';
+            width: 5px; height: 5px;
+            margin: 0 2rem;
+            background: var(--gold);
+            transform: rotate(45deg);
+            flex-shrink: 0;
+        }
+
+        @keyframes marquee {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-50%); }
+        }
+
+        .topbar-close {
+            position: absolute;
+            right: 0.5rem; top: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+            width: 1.75rem; height: 1.75rem;
+            display: grid; place-items: center;
+            color: var(--gold-light);
+            background: var(--garnet);
+            border-radius: 9999px;
+            opacity: 0.8;
+            transition: opacity .2s;
+        }
+        .topbar-close:hover { opacity: 1; }
+        .topbar.is-hidden { display: none; }
+
+        /* ---------- Header ---------- */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: rgba(238, 236, 234, 0.88);
+            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(179, 146, 90, 0.35);
+            transition: box-shadow .3s ease, background .3s ease;
+        }
+        .site-header.is-scrolled {
+            background: rgba(238, 236, 234, 0.96);
+            box-shadow: 0 8px 30px -18px rgba(23, 18, 15, 0.45);
+        }
+        .header-row {
+            position: relative;
+            min-height: var(--header-h);
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+            transition: min-height .3s ease, padding .3s ease;
+        }
+        .site-header.is-scrolled .header-row {
+            min-height: 3.75rem;
+            padding-top: 0.9rem;
+            padding-bottom: 0.9rem;
+        }
+
+        .brand {
+            font-family: 'Bodoni Moda', Georgia, serif;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            line-height: 1.15;
+            color: var(--ink);
+            text-align: center;
+            transition: font-size .3s ease;
+        }
+        .brand:hover { color: var(--garnet); }
+
+        .scroll-progress {
+            position: absolute;
+            left: 0; bottom: -1px;
+            height: 2px;
+            width: 100%;
+            transform-origin: left;
+            transform: scaleX(0);
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold-dark));
+        }
+
+        /* Nav links: gold hairline grows from the centre */
+        .nav-link {
+            position: relative;
+            font-size: 0.8rem;
+            letter-spacing: 0.18em;
+            padding: 0.25rem 0;
+            transition: color .3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: var(--gold);
+            transform: scaleX(0);
+            transition: transform .35s cubic-bezier(.2,.7,.2,1);
+        }
+        .nav-link:hover::after,
+        .nav-link.active::after { transform: scaleX(1); }
+        .nav-link.active { color: var(--garnet); }
+
+        .util-link {
+            font-size: 0.75rem;
+            letter-spacing: 0.18em;
+            transition: color .25s ease;
+        }
+        .util-link:hover { color: var(--garnet); }
+
+        .cart-bump { animation: bump .5s ease; }
+        @keyframes bump {
+            0%, 100% { transform: scale(1); }
+            40%      { transform: scale(1.18); color: var(--gold-dark); }
+        }
+
+        /* ---------- Product cards (used by child templates) ---------- */
+        .product-card { position: relative; }
+        .product-card .image-wrap { overflow: hidden; background: #e4e0db; }
+
+        .product-image {
+            transition: transform .8s cubic-bezier(.2,.7,.2,1), filter .8s ease;
+        }
+        .product-card:hover .product-image {
+            transform: scale(1.06);
+            filter: brightness(1.03) contrast(1.02);
+        }
+        /* glint sweeping across the piece on hover */
+        .product-card .image-wrap::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -80%;
+            width: 40%; height: 100%;
+            background: linear-gradient(105deg, transparent, rgba(255,255,255,.55), transparent);
+            transform: skewX(-18deg);
+            pointer-events: none;
+        }
+        .product-card:hover .image-wrap::after { animation: glint 1s ease; }
+        @keyframes glint { to { left: 140%; } }
+
+        /* Reusable button styles for child templates */
+        .btn-gold {
+            display: inline-block;
+            padding: 0.9rem 2.2rem;
+            font-size: 0.78rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ink);
+            background: linear-gradient(120deg, var(--gold-light), var(--gold) 45%, var(--gold-light) 70%, var(--gold-dark));
+            background-size: 200% 100%;
+            background-position: 0 0;
+            transition: background-position .6s ease, box-shadow .3s ease, transform .2s ease;
+        }
+        .btn-gold:hover {
+            background-position: 100% 0;
+            box-shadow: 0 10px 24px -12px rgba(138, 108, 58, .9);
+        }
+        .btn-gold:active { transform: translateY(1px); }
+
+        .btn-outline {
+            display: inline-block;
+            padding: 0.9rem 2.2rem;
+            font-size: 0.78rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            border: 1px solid var(--ink);
+            transition: background .3s ease, color .3s ease, border-color .3s ease;
+        }
+        .btn-outline:hover { background: var(--garnet); border-color: var(--garnet); color: var(--gold-light); }
+
+        /* Scroll reveal for product cards only */
+        .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+        .reveal.in { opacity: 1; transform: none; }
+
+        /* Page swap fade (HTMX navigation) */
+        .page-enter { animation: pageEnter .45s ease both; }
+        @keyframes pageEnter { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ---------- Mobile menu ---------- */
+        .mobile-menu {
+            transform: translateX(-100%);
+            transition: transform 0.4s cubic-bezier(.2,.7,.2,1);
+            background: var(--pearl);
+        }
+        .mobile-menu.open { transform: translateX(0); }
+
+        .mobile-nav-link {
+            font-family: 'Bodoni Moda', Georgia, serif;
+            font-size: 1.6rem;
+            letter-spacing: 0.06em;
+            transition: color .25s ease, padding-left .25s ease;
+        }
+        .mobile-nav-link:hover,
+        .mobile-nav-link.active { color: var(--garnet); padding-left: .5rem; }
+
+        .hamburger { cursor: pointer; }
+        .hamburger span {
+            display: block;
+            width: 25px;
+            height: 1.5px;
+            background-color: var(--ink);
+            margin: 6px 0;
+            transition: 0.3s;
+        }
+        .hamburger.active span:nth-child(1) { transform: rotate(-45deg) translate(-5px, 6px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
+
+        /* Overlay */
+        .overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease-in-out;
+            background: rgba(23, 18, 15, 0.55);
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+        }
+        .overlay.active { opacity: 1; visibility: visible; }
+
+        /* HTMX loading indicator */
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+            background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold-dark)) !important;
+        }
+        .htmx-request .htmx-indicator { opacity: 1; }
+        .htmx-request.htmx-indicator { opacity: 1; }
+
+        /* ---------- Cart drawer (состояние хранится на <body>) ---------- */
+        #cart-modal { transform: translateX(100%); }
+        body.cart-open #cart-modal { transform: translateX(0); }
+
+        #cart-overlay { opacity: 0; visibility: hidden; }
+        body.cart-open #cart-overlay { opacity: 1; visibility: visible; }
+
+        /* ---------- Toast + back to top ---------- */
+        .toast-stack {
+            position: fixed;
+            left: 50%;
+            bottom: 1.5rem;
+            transform: translateX(-50%);
+            z-index: 70;
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            align-items: center;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--ink);
+            color: var(--gold-light);
+            border: 1px solid var(--gold-dark);
+            padding: .75rem 1.4rem;
+            font-size: .85rem;
+            letter-spacing: .06em;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity .35s ease, transform .35s ease;
+        }
+        .toast.show { opacity: 1; transform: none; }
+
+        .to-top {
+            position: fixed;
+            right: 1.25rem;
+            bottom: 1.25rem;
+            z-index: 45;
+            width: 3rem; height: 3rem;
+            display: grid; place-items: center;
+            background: var(--ink);
+            color: var(--gold-light);
+            border: 1px solid var(--gold);
+            border-radius: 9999px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: opacity .3s ease, transform .3s ease, visibility .3s, background .3s ease;
+        }
+        .to-top.show { opacity: 1; visibility: visible; transform: none; }
+        .to-top:hover { background: var(--garnet); }
+
+        /* ---------- Home hero + footer ---------- */
+        .hero-title {
+            font-family: 'Bodoni Moda', Georgia, serif;
+            font-weight: 400;
+            line-height: 1.02;
+            letter-spacing: -0.01em;
+        }
+        .gold-rule {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        .category-tile {
+            position: relative;
+            overflow: hidden;
+            background: var(--ink);
+            color: var(--gold-light);
+            transition: background .5s ease, color .5s ease;
+        }
+        .category-tile::before {
+            content: '';
+            position: absolute;
+            inset: 10px;
+            border: 1px solid rgba(179, 146, 90, .5);
+            transition: inset .5s cubic-bezier(.2,.7,.2,1), border-color .5s ease;
+        }
+        .category-tile:hover { background: var(--garnet); color: #fff; }
+        .category-tile:hover::before { inset: 16px; border-color: var(--gold-light); }
+
+        .site-footer { background: var(--ink); color: #cfc6b8; }
+        .site-footer a { transition: color .25s ease; }
+        .site-footer a:hover { color: var(--gold-light); }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .marquee-track { animation: none; }
+            .reveal { opacity: 1; transform: none; transition: none; }
+            .page-enter, .cart-bump, .product-card:hover .image-wrap::after { animation: none; }
+        }
+    </style>
+</head>
+<body class="bg-pearl text-ink font-sans">
+
+    <!-- Announcement marquee -->
+    <div id="topbar" class="topbar" role="region" aria-label="Store announcements">
+        <div class="marquee-track" id="marqueeTrack">
+            <div class="marquee-group" id="marqueeGroup">
+                <span class="marquee-item">Free insured shipping on orders over $500</span>
+                <span class="marquee-item">Hallmarked 925 silver and 18k gold</span>
+                <span class="marquee-item">Complimentary engraving on every ring</span>
+                <span class="marquee-item">New: the Winter Melancholy collection</span>
+                <span class="marquee-item">Ethically sourced diamonds and pearls</span>
+                <span class="marquee-item">30-day returns, lifetime polishing</span>
+            </div>
+        </div>
+        <button id="topbarClose" class="topbar-close" aria-label="Dismiss announcements">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M1 1l8 8M9 1L1 9"/></svg>
+        </button>
+    </div>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="overlay" class="overlay fixed inset-0 z-40 md:hidden"></div>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="mobile-menu fixed top-0 left-0 w-80 h-full z-50 md:hidden shadow-2xl">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="brand text-base text-left">
+                    PREMIUM-JEWELER <br>
+
+                </h2>
+                <button id="closeMenu" class="hamburger active" aria-label="Close menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+
+            <div class="gold-rule mb-6"></div>
+
+            <nav class="space-y-2">
+                <a href="{% url 'main:index' %}"
+                   hx-get="{% url 'main:index' %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="mobile-nav-link block text-ink py-2 border-b border-gold/30">
+                   HOME
+                </a>
+                {% for category in categories %}
+                <a href="{% url 'main:catalog' category.slug %}"
+                   hx-get="{% url 'main:catalog' category.slug %}"
+                   hx-target="#main-content"
+                   hx-push-url="true"
+                   class="mobile-nav-link block text-ink py-2 border-b border-gold/30 {% if current_category == category.slug %}active{% endif %}">
+                   {{ category.name|upper }}
+                </a>
+                {% endfor %}
+            </nav>
+
+            <div class="mt-8 space-y-4">
+                <a href="#" class="util-link block font-medium text-ink py-2">SEARCH</a>
+                <a href="{% url 'users:profile' %}"
+                hx-get="{% url 'users:profile' %}"
+                hx-target="#main-content"
+                hx-push-url="true"
+                class="util-link block font-medium text-ink uppercase py-2">
+                    ACCOUNT
+                </a>
+                <a href="#" id="mobileCart" class="util-link block font-medium text-ink py-2">CART (0)</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="site-header" id="siteHeader">
+        <div class="mx-auto px-4 sm:px-6 lg:px-10">
+            <div class="header-row flex justify-between items-center">
+                <!-- Mobile Menu Button -->
+                <button id="menuToggle" class="hamburger md:hidden" aria-label="Open menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <!-- Logo -->
+                <div class="flex-shrink-0 md:order-2 md:absolute md:left-1/2 md:-translate-x-1/2">
+                    <a href="{% url 'main:index' %}"
+                       hx-get="{% url 'main:index' %}"
+                       hx-target="#main-content"
+                       hx-push-url="true">
+                        <h1 class="brand text-sm sm:text-lg md:text-xl">
+                            PREMIUM-JEWELER <br>
+                            
+                        </h1>
+                    </a>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex space-x-8 md:order-1">
+                    {% for category in categories %}
+                    <a href="{% url 'main:catalog' category.slug %}"
+                       hx-get="{% url 'main:catalog' category.slug %}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       class="nav-link font-medium text-ink {% if current_category == category.slug %}active{% endif %}">
+                       {{ category.name|upper }}
+                    </a>
+                    {% endfor %}
+                </nav>
+
+                <!-- Right side links -->
+                <div class="hidden md:flex items-center space-x-6 md:order-3">
+                    <div class="relative" id="mobile-search-wrapper">
+                        <button id="mobile-search-toggle"
+                                hx-get="{% url 'main:catalog_all' %}?show_search=true"
+                                hx-target="#mobile-search-wrapper"
+                                hx-swap="innerHTML"
+                                class="util-link font-medium uppercase">
+                            SEARCH
+                        </button>
+                    </div>  
+                    <a href="{% url 'users:profile' %}"
+                    hx-get="{% url 'users:profile' %}"
+                    hx-target="#main-content"
+                    hx-push-url="true"
+                    class="util-link font-medium text-ink uppercase">
+                        ACCOUNT
+                    </a>
+                    <a href="#" id="desktopCart" class="util-link font-medium text-ink">CART (0)</a>
+                </div>
+
+                <!-- Mobile Cart Icon -->
+                <div class="md:hidden">
+                    <a href="#" id="mobileCartHeader" class="text-xs tracking-widest font-medium text-ink">CART (0)</a>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-progress" id="scrollProgress"></div>
+    </header>
+    <div id="cart-container"></div>
+
+    <!-- Loading Indicator -->
+    <div class="htmx-indicator fixed top-0 left-0 w-full h-1 bg-black z-50"></div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        {% block content %}
+        <!-- Default home content -->
+        <main>
+            <!-- Hero -->
+            <section class="relative overflow-hidden bg-ink text-pearl">
+                <div class="absolute inset-0 opacity-40" style="background: radial-gradient(60% 80% at 75% 30%, rgba(179,146,90,.55), transparent 60%), radial-gradient(50% 70% at 15% 90%, rgba(91,26,43,.85), transparent 70%);"></div>
+                <div class="relative mx-auto max-w-6xl px-6 lg:px-10 py-24 md:py-36">
+                    <h2 class="hero-title text-5xl sm:text-6xl md:text-8xl max-w-4xl">
+                        Fine jewelry for the <em class="text-gold-light">beautifully</em> unbothered.
+                    </h2>
+                    <p class="mt-8 max-w-md text-base md:text-lg text-pearl/75 font-light leading-relaxed">
+                        Rings, chains and earrings in gold, silver and pearl. Made in small batches, hallmarked, and sent to you insured.
+                    </p>
+                    <div class="mt-10 flex flex-wrap gap-4">
+                        <a href="#collections" class="btn-gold">Shop the collection</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Categories -->
+            <section id="collections" class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-20">
+                <h3 class="hero-title text-3xl md:text-4xl text-center mb-3">Select a category</h3>
+                <p class="text-center text-ink/60 mb-12">Browse our collection</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mx-auto">
+                    {% for category in categories %}
+                    <a href="{% url 'main:catalog' category.slug %}"
+                       hx-get="{% url 'main:catalog' category.slug %}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       class="category-tile flex items-center justify-center text-center p-14 min-h-[12rem]">
+                        <h3 class="hero-title text-2xl tracking-[0.12em]">{{ category.name|upper }}</h3>
+                    </a>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <div class="gold-rule mx-auto max-w-5xl"></div>
+
+            <!-- Promises -->
+            <section class="mx-auto max-w-5xl px-6 py-16 grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 text-center">
+                <div>
+                    <p class="hero-title text-xl mb-1">Hallmarked</p>
+                    <p class="text-sm text-ink/60">Every piece is assayed and stamped.</p>
+                </div>
+                <div>
+                    <p class="hero-title text-xl mb-1">Insured shipping</p>
+                    <p class="text-sm text-ink/60">Free on orders over $500.</p>
+                </div>
+                <div>
+                    <p class="hero-title text-xl mb-1">Engraving</p>
+                    <p class="text-sm text-ink/60">Complimentary on every ring.</p>
+                </div>
+                <div>
+                    <p class="hero-title text-xl mb-1">Lifetime polish</p>
+                    <p class="text-sm text-ink/60">Send it back, we make it shine.</p>
+                </div>
+            </section>
+        </main>
+        {% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="mx-auto max-w-6xl px-6 lg:px-10 py-16 grid gap-12 md:grid-cols-3">
+            <div>
+                <p class="brand text-base text-gold-light !text-left mb-4">
+                    PREMIUM-JEWELER <br>
+                    
+                </p>
+                <p class="text-sm font-light leading-relaxed max-w-xs">
+                    Gold, silver and pearl, made in small batches and sent insured.
+                </p>
+            </div>
+
+            <div>
+                <p class="hero-title text-lg text-gold-light mb-4">Shop</p>
+                <ul class="space-y-2 text-sm">
+                    {% for category in categories %}
+                    <li>
+                        <a href="{% url 'main:catalog' category.slug %}"
+                           hx-get="{% url 'main:catalog' category.slug %}"
+                           hx-target="#main-content"
+                           hx-push-url="true">{{ category.name }}</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div>
+                <p class="hero-title text-lg text-gold-light mb-4">New pieces, first</p>
+                <form id="newsletterForm" class="flex border-b border-gold-dark focus-within:border-gold-light transition-colors">
+                    <label for="newsletterEmail" class="sr-only">Email address</label>
+                    <input id="newsletterEmail" type="email" required placeholder="Your email"
+                           class="flex-1 bg-transparent py-3 text-sm placeholder:text-pearl/40 focus:outline-none">
+                    <button type="submit" class="text-xs tracking-[0.2em] uppercase text-gold-light hover:text-white transition-colors px-2">Subscribe</button>
+                </form>
+            </div>
+        </div>
+        <div class="border-t border-white/10 py-6 text-center text-xs tracking-widest text-pearl/50">
+            &copy; <span id="year"></span> PREMIUM-JEWELER
+        </div>
+    </footer>
+
+    <!-- Toasts + back to top -->
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <button id="toTop" class="to-top" aria-label="Back to top">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7 12V2M2 6l5-5 5 5"/></svg>
+    </button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mobile menu functionality
+            const menuToggle = document.getElementById('menuToggle');
+            const closeMenu = document.getElementById('closeMenu');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const overlay = document.getElementById('overlay');
+
+            function openMobileMenu() {
+                mobileMenu.classList.add('open');
+                overlay.classList.add('active');
+                menuToggle.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMobileMenu() {
+                mobileMenu.classList.remove('open');
+                overlay.classList.remove('active');
+                menuToggle.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            menuToggle.addEventListener('click', openMobileMenu);
+            closeMenu.addEventListener('click', closeMobileMenu);
+            overlay.addEventListener('click', closeMobileMenu);
+
+            // Close mobile menu after navigation
+            document.addEventListener('htmx:afterRequest', function() {
+                closeMobileMenu();
+            });
+
+            // Cart functionality
+            const desktopCart = document.getElementById('desktopCart');
+            const mobileCart = document.getElementById('mobileCart');
+            const mobileCartHeader = document.getElementById('mobileCartHeader');
+
+            // Get initial cart count
+            updateCartCount();
+
+            function updateHeaderCartCount(count) {
+                const cartText = `CART (${count})`;
+                if (desktopCart) desktopCart.textContent = cartText;
+                if (mobileCart) mobileCart.textContent = cartText;
+                if (mobileCartHeader) mobileCartHeader.textContent = cartText;
+            }
+
+            function updateCartCount() {
+                fetch('{% url "cart:cart_count" %}')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateHeaderCartCount(data.total_items);
+                    });
+            }
+
+            // Локальный openCart удалён: клики ниже вызывают глобальный window.openCart (см. конец скрипта)
+
+            // Клики по CART обрабатываются делегированием в конце скрипта,
+            // чтобы они продолжали работать после восстановления страницы htmx (back/forward)
+
+            // Close mobile menu on window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    closeMobileMenu();
+                }
+            });
+
+            // Update active navigation links after HTMX requests
+            document.addEventListener('htmx:afterSettle', function() {
+                updateActiveNavLinks();
+            });
+
+            function updateActiveNavLinks() {
+                const currentPath = window.location.pathname;
+                const navLinks = document.querySelectorAll('.nav-link, .mobile-nav-link');
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === currentPath) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            // Listen for cart updates
+            document.addEventListener('cartUpdated', function(e) {
+                if (e.detail && e.detail.total_items !== undefined) {
+                    updateHeaderCartCount(e.detail.total_items);
+                }
+            });
+
+            /* ================= New front-end features ================= */
+
+            // --- Marquee: fill the width, then duplicate for a seamless loop ---
+            const track = document.getElementById('marqueeTrack');
+            const group = document.getElementById('marqueeGroup');
+            if (track && group) {
+                const original = group.innerHTML;
+                let guard = 0;
+                while (group.scrollWidth < window.innerWidth && guard++ < 6) {
+                    group.insertAdjacentHTML('beforeend', original);
+                }
+                const clone = group.cloneNode(true);
+                clone.removeAttribute('id');
+                clone.setAttribute('aria-hidden', 'true');
+                track.appendChild(clone);
+                // keep speed constant (~55px/s) regardless of content width
+                track.style.animationDuration = Math.max(20, group.scrollWidth / 55) + 's';
+            }
+
+            // Dismiss marquee (remembered for the session)
+            const topbar = document.getElementById('topbar');
+            try {
+                if (sessionStorage.getItem('topbarClosed') === '1') topbar.classList.add('is-hidden');
+            } catch (e) {}
+            document.getElementById('topbarClose').addEventListener('click', function() {
+                topbar.classList.add('is-hidden');
+                try { sessionStorage.setItem('topbarClosed', '1'); } catch (e) {}
+            });
+
+            // --- Header shrink, scroll progress, back-to-top ---
+            const header = document.getElementById('siteHeader');
+            const progress = document.getElementById('scrollProgress');
+            const toTop = document.getElementById('toTop');
+            let ticking = false;
+
+            function onScroll() {
+                const y = window.scrollY;
+                const max = document.documentElement.scrollHeight - window.innerHeight;
+                header.classList.toggle('is-scrolled', y > 40);
+                progress.style.transform = `scaleX(${max > 0 ? Math.min(y / max, 1) : 0})`;
+                toTop.classList.toggle('show', y > 700);
+                ticking = false;
+            }
+            window.addEventListener('scroll', function() {
+                if (!ticking) { requestAnimationFrame(onScroll); ticking = true; }
+            }, { passive: true });
+            onScroll();
+
+            toTop.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            // --- Toasts ---
+            const toastStack = document.getElementById('toastStack');
+            window.showToast = function(message) {
+                const el = document.createElement('div');
+                el.className = 'toast';
+                el.textContent = message;
+                toastStack.appendChild(el);
+                requestAnimationFrame(() => el.classList.add('show'));
+                setTimeout(() => {
+                    el.classList.remove('show');
+                    setTimeout(() => el.remove(), 400);
+                }, 2800);
+            };
+
+            // Toast when the cart count goes up
+            let lastCount = null;
+            const baseUpdate = updateHeaderCartCount;
+            updateHeaderCartCount = function(count) {
+                baseUpdate(count);
+                if (lastCount !== null && count > lastCount) {
+                    window.showToast('Added to your cart');
+                }
+                if (lastCount !== null && count !== lastCount) {
+                    [desktopCart, mobileCart, mobileCartHeader].forEach(el => {
+                        if (!el) return;
+                        el.classList.remove('cart-bump');
+                        void el.offsetWidth;
+                        el.classList.add('cart-bump');
+                    });
+                }
+                lastCount = count;
+            };
+
+            // --- Reveal product cards as they enter the viewport ---
+            const io = ('IntersectionObserver' in window)
+                ? new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in');
+                            io.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.12 })
+                : null;
+
+            function initReveal() {
+                document.querySelectorAll('.product-card:not(.reveal)').forEach((card, i) => {
+                    card.classList.add('reveal');
+                    card.style.transitionDelay = (i % 4) * 70 + 'ms';
+                    if (io) io.observe(card); else card.classList.add('in');
+                });
+            }
+            initReveal();
+
+            // --- After an HTMX page swap: fade in, scroll up, re-init reveal ---
+            document.addEventListener('htmx:afterSwap', function(e) {
+                const target = e.detail && e.detail.target;
+                if (target && target.id === 'main-content') {
+                    target.classList.remove('page-enter');
+                    void target.offsetWidth;
+                    target.classList.add('page-enter');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                initReveal();
+            });
+
+            // --- Newsletter form (front-end only) ---
+            const newsletterForm = document.getElementById('newsletterForm');
+            if (newsletterForm) {
+                newsletterForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    newsletterForm.reset();
+                    window.showToast('Thank you, you are on the list');
+                });
+            }
+
+            // --- Keyboard: Esc closes the menu, "/" opens search ---
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') closeMobileMenu();
+                const tag = (document.activeElement && document.activeElement.tagName) || '';
+                if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) {
+                    const s = document.getElementById('mobile-search-toggle');
+                    if (s) { e.preventDefault(); s.click(); }
+                }
+            });
+
+            document.getElementById('year').textContent = new Date().getFullYear();
+        });
+
+        // Global function to update cart count
+        window.updateHeaderCartCount = function(count) {
+            const desktopCart = document.getElementById('desktopCart');
+            const mobileCart = document.getElementById('mobileCart');
+            const mobileCartHeader = document.getElementById('mobileCartHeader');
+            const cartText = `CART (${count})`;
+
+            if (desktopCart) desktopCart.textContent = cartText;
+            if (mobileCart) mobileCart.textContent = cartText;
+            if (mobileCartHeader) mobileCartHeader.textContent = cartText;
+        };
+
+        // ---------- Cart drawer: открыть / закрыть ----------
+        // Открывает корзину только по явному вызову (клик по CART в шапке, добавление товара).
+        // Состояние хранится на <body> (класс cart-open), поэтому htmx-свопы фрагмента его не ломают.
+        window.openCart = async function () {
+            const container = document.getElementById('cart-container');
+            if (!container) {
+                console.error('openCart: #cart-container not found');
+                return;
+            }
+            try {
+                const response = await fetch('{% url "cart:cart_modal" %}', {
+                    headers: { 'HX-Request': 'true', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                });
+                if (!response.ok) throw new Error('Cart request failed: ' + response.status);
+                container.innerHTML = await response.text();
+                if (window.htmx) htmx.process(container); // подключить hx-* внутри корзины
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    document.body.classList.add('cart-open');
+                }));
+            } catch (err) {
+                console.error('openCart error:', err);
+            }
+        };
+
+        window.closeCart = function () {
+            document.body.classList.remove('cart-open');
+        };
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') window.closeCart();
+        });
+
+        // Делегирование: работает даже если htmx заменил содержимое <body> (история браузера)
+        document.addEventListener('click', function (e) {
+            const link = e.target.closest('#desktopCart, #mobileCart, #mobileCartHeader');
+            if (!link) return;
+            e.preventDefault();
+            window.openCart();
+        });
+    </script>
+</body>
+</html>

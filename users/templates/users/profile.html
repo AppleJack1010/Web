@@ -1,0 +1,392 @@
+{% extends base_template %}
+{% load static %}
+{% block content %}
+<style>
+    /* ---------- Hero ---------- */
+    .pf-hero { position: relative; overflow: hidden; background: var(--ink); color: var(--pearl); }
+    .pf-hero::before { content: ''; position: absolute; inset: 0; opacity: .45; background: radial-gradient(55% 90% at 85% 20%, rgba(179,146,90,.6), transparent 60%), radial-gradient(45% 80% at 10% 100%, rgba(91,26,43,.9), transparent 70%); }
+    .pf-hero > * { position: relative; }
+
+    .pf-avatar-btn { position: relative; width: 8.5rem; height: 8.5rem; border-radius: 9999px; padding: 4px; background: linear-gradient(145deg, var(--gold-light), var(--gold) 55%, var(--gold-dark)); cursor: pointer; border: 0; display: block; flex-shrink: 0; }
+    .pf-avatar-inner { width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; display: grid; place-items: center; background: var(--garnet); color: var(--gold-light); font-family: 'Bodoni Moda', Georgia, serif; font-size: 2.6rem; }
+    .pf-avatar-inner img { width: 100%; height: 100%; object-fit: cover; display: none; }
+    .pf-avatar-btn.has-img .pf-avatar-inner img { display: block; }
+    .pf-avatar-btn.has-img .pf-initials { display: none; }
+    .pf-avatar-cam { position: absolute; inset: 4px; border-radius: 9999px; display: grid; place-items: center; background: rgba(23,18,15,.6); color: var(--gold-light); font-size: .72rem; letter-spacing: .12em; opacity: 0; transition: opacity .3s ease; text-align: center; }
+    .pf-avatar-btn:hover .pf-avatar-cam, .pf-avatar-btn:focus-visible .pf-avatar-cam, .pf-avatar-btn.drag .pf-avatar-cam { opacity: 1; }
+    .pf-link { font-size: .78rem; letter-spacing: .08em; color: var(--gold-light); text-decoration: underline; text-decoration-color: rgba(220,196,154,.4); text-underline-offset: 4px; background: none; border: 0; cursor: pointer; transition: color .25s ease; }
+    .pf-link:hover { color: #fff; }
+
+    .pf-ring { position: relative; width: 4.5rem; height: 4.5rem; flex-shrink: 0; }
+    .pf-ring svg { transform: rotate(-90deg); }
+    .pf-ring circle { fill: none; stroke-width: 3; }
+    .pf-ring .bg { stroke: rgba(220,196,154,.25); }
+    .pf-ring .fg { stroke: var(--gold-light); stroke-linecap: round; stroke-dasharray: 163.4; stroke-dashoffset: 163.4; transition: stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1); }
+    .pf-ring span { position: absolute; inset: 0; display: grid; place-items: center; font-family: 'Bodoni Moda', Georgia, serif; font-size: 1.05rem; color: var(--gold-light); }
+
+    /* ---------- Cards ---------- */
+    .pf-card { position: relative; background: #f7f5f2; border: 1px solid rgba(179,146,90,.5); padding: 1.75rem; }
+    .pf-card::before { content: ''; position: absolute; inset: 6px; border: 1px solid rgba(179,146,90,.18); pointer-events: none; }
+    .pf-card > * { position: relative; }
+    .pf-title { font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: 1.7rem; line-height: 1.15; }
+    .pf-sub { font-size: .9rem; color: rgba(23,18,15,.6); font-weight: 300; margin-top: .25rem; }
+
+    /* ---------- Field tiles with hints ---------- */
+    .pf-field { padding: 1rem 0; border-bottom: 1px solid rgba(179,146,90,.25); }
+    .pf-label { font-size: .75rem; letter-spacing: .1em; color: var(--gold-dark); }
+    .pf-value { font-size: 1.05rem; line-height: 1.5; margin-top: .15rem; word-break: break-word; }
+    .pf-hint { font-size: .78rem; color: rgba(23,18,15,.5); font-weight: 300; margin-top: .15rem; }
+    .pf-empty { color: rgba(23,18,15,.4); font-style: italic; }
+    .pf-field[data-filled="0"] .pf-label::after { content: 'missing'; margin-left: .6rem; padding: .05rem .5rem; font-size: .68rem; letter-spacing: .06em; background: rgba(91,26,43,.1); color: var(--garnet); }
+
+    /* ---------- Sidebar ---------- */
+    .pf-side { display: block; padding: .95rem 1rem; font-size: .78rem; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; border-left: 2px solid transparent; border-bottom: 1px solid rgba(179,146,90,.2); transition: color .3s ease, padding-left .3s ease, border-color .3s ease; }
+    .pf-side:last-child { border-bottom: 0; }
+    .pf-side:hover, .pf-side.active { color: var(--garnet); padding-left: 1.4rem; border-left-color: var(--gold); }
+
+    .btn-sm { padding: .75rem 1.6rem; font-size: .7rem; cursor: pointer; }
+    button.btn-gold { border: 0; }
+    .pf-msg { border: 1px solid rgba(91,26,43,.4); background: rgba(91,26,43,.05); color: var(--garnet); font-size: .85rem; text-align: center; padding: .75rem 1rem; }
+
+    .pf-badge { display: inline-block; padding: .2rem .8rem; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; background: var(--garnet); color: var(--gold-light); }
+
+    .pf-tip { display: flex; gap: .9rem; padding: 1rem 1.25rem; border: 1px dashed rgba(179,146,90,.7); background: rgba(220,196,154,.12); font-size: .88rem; }
+    .pf-tip i { flex-shrink: 0; width: .55rem; height: .55rem; margin-top: .45rem; background: var(--gold); transform: rotate(45deg); }
+
+    /* ---------- Delete account dialog ---------- */
+    .btn-danger { display: inline-block; padding: .75rem 1.6rem; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; background: var(--garnet); color: var(--gold-light); border: 0; cursor: pointer; transition: background .3s ease; }
+    .btn-danger:hover { background: #3f101d; }
+    .pf-dialog { border: 1px solid rgba(179,146,90,.6); background: #f7f5f2; color: var(--ink); padding: 2rem; max-width: 28rem; width: calc(100% - 2rem); margin: auto; }
+    .pf-dialog::backdrop { background: rgba(23,18,15,.6); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+
+    @media (max-width: 767px) {
+        .pf-side-nav { display: flex; overflow-x: auto; }
+        .pf-side { white-space: nowrap; border-bottom: 0; border-left: 0; border-bottom: 2px solid transparent; padding: .9rem 1rem !important; }
+        .pf-side:hover, .pf-side.active { border-bottom-color: var(--gold); }
+    }
+</style>
+
+<!-- ============ Hero with avatar ============ -->
+<section class="pf-hero">
+    <div class="mx-auto max-w-6xl px-6 lg:px-10 py-12 md:py-16">
+        <div class="flex flex-col md:flex-row md:items-center gap-8">
+
+            <div class="flex flex-col items-center gap-3">
+                <button type="button" id="avatarBtn" class="pf-avatar-btn" aria-label="Change profile photo">
+                    <span class="pf-avatar-inner">
+                        <span class="pf-initials">{{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</span>
+                        <img id="avatarImg" alt="Your profile photo">
+                    </span>
+                    <span class="pf-avatar-cam">Change<br>photo</span>
+                </button>
+                <input type="file" id="avatarInput" accept="image/png,image/jpeg,image/webp" hidden>
+                <button type="button" id="avatarRemove" class="pf-link" hidden>Remove photo</button>
+            </div>
+
+            <div class="flex-1 text-center md:text-left">
+                <p class="text-sm text-pearl/60 mb-2">Welcome back</p>
+                <h1 class="hero-title text-4xl md:text-6xl">{{ request.user.first_name }} {{ request.user.last_name }}</h1>
+                {% if request.user.email %}<p class="mt-3 text-pearl/70 font-light">{{ request.user.email }}</p>{% endif %}
+                <p class="mt-4 text-xs text-pearl/50" id="avatarNote">Tap the photo to upload a JPG, PNG or WebP up to 5 MB.</p>
+            </div>
+
+            <div class="flex items-center justify-center gap-4 md:self-center">
+                <div class="pf-ring" aria-hidden="true">
+                    <svg width="72" height="72" viewBox="0 0 60 60"><circle class="bg" cx="30" cy="30" r="26"/><circle class="fg" id="ringFg" cx="30" cy="30" r="26"/></svg>
+                    <span id="ringText">0%</span>
+                </div>
+                <div class="text-sm">
+                    <p class="font-display text-lg text-gold-light">Profile completeness</p>
+                    <p class="text-pearl/60 text-xs" id="ringHint">Fill in your details for faster checkout.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="px-4 sm:px-6 lg:px-10 py-10 md:py-14">
+    <div class="max-w-6xl mx-auto">
+
+        {% if messages %}
+            <div class="mb-8 max-w-xl mx-auto space-y-2">
+                {% for message in messages %}<div class="pf-msg">{{ message }}</div>{% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-[14rem_1fr] gap-8 md:gap-12">
+
+            <!-- ============ Menu ============ -->
+            <aside>
+                <nav class="pf-card !p-0 md:sticky md:top-28 pf-side-nav" aria-label="Profile sections">
+                    <a href="#section-details" class="pf-side active" data-spy="section-details">Details</a>
+                    <a href="#section-address" class="pf-side" data-spy="section-address">Address</a>
+                    <a href="#section-orders" class="pf-side" data-spy="section-orders">Orders</a>
+                    <a href="#section-picks" class="pf-side" data-spy="section-picks">For you</a>
+                    <a href="{% url 'users:logout' %}"
+                       hx-get="{% url 'users:logout' %}"
+                       hx-target="#main-content"
+                       hx-push-url="true"
+                       class="pf-side">Log out</a>
+                </nav>
+            </aside>
+
+            <!-- ============ Content ============ -->
+            <div class="space-y-14 min-w-0" id="profile-main-content">
+
+                <!-- Account details (container id и кнопка Edit сохранены для HTMX) -->
+                <section id="section-details" class="scroll-mt-28">
+                    <h2 class="pf-title">Personal details</h2>
+                    <p class="pf-sub mb-5">This is how we address you and where we send order updates.</p>
+
+                    <div class="pf-card" id="account-details-content">
+                        <div class="grid gap-x-10 sm:grid-cols-2">
+                            <div class="pf-field" data-filled="{% if request.user.first_name %}1{% else %}0{% endif %}">
+                                <p class="pf-label">First name</p>
+                                <p class="pf-value">{{ request.user.first_name|default:"Not specified" }}</p>
+                                <p class="pf-hint">Printed on your parcel and engraving receipts.</p>
+                            </div>
+                            <div class="pf-field" data-filled="{% if request.user.last_name %}1{% else %}0{% endif %}">
+                                <p class="pf-label">Last name</p>
+                                <p class="pf-value">{{ request.user.last_name|default:"Not specified" }}</p>
+                                <p class="pf-hint">Must match your ID for insured delivery.</p>
+                            </div>
+                            <div class="pf-field" data-filled="{% if request.user.email %}1{% else %}0{% endif %}">
+                                <p class="pf-label">Email</p>
+                                <p class="pf-value">{{ request.user.email|default:"Not specified" }}</p>
+                                <p class="pf-hint">Order confirmations and tracking are sent here.</p>
+                            </div>
+                            <div class="pf-field" data-filled="{% if request.user.phone %}1{% else %}0{% endif %}">
+                                <p class="pf-label">Phone</p>
+                                <p class="pf-value">{{ request.user.phone|default:"Not specified" }}</p>
+                                <p class="pf-hint">The courier calls this number before delivery.</p>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex flex-wrap gap-3">
+                            <button hx-get="{% url 'users:edit_account_details' %}"
+                                    hx-target="#account-details-content"
+                                    hx-swap="innerHTML"
+                                    class="btn-gold btn-sm">Edit details</button>
+                            <button type="button"
+                                    class="btn-outline btn-sm"
+                                    onclick="document.getElementById('deleteDialog').showModal()">Delete account</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Address -->
+                <section id="section-address" class="scroll-mt-28">
+                    <h2 class="pf-title">Delivery address</h2>
+                    <p class="pf-sub mb-5">Used to prefill checkout. You can change it for any order.</p>
+
+                    <div class="pf-card">
+                        <div class="grid gap-x-10 sm:grid-cols-2">
+                            <div class="pf-field" data-filled="{% if request.user.country %}1{% else %}0{% endif %}">
+                                <p class="pf-label">Country / region</p>
+                                <p class="pf-value">{{ request.user.country|default:"Not specified" }}</p>
+                                <p class="pf-hint">Decides shipping options and duties.</p>
+                            </div>
+                            <div class="pf-field" data-filled="{% if request.user.city %}1{% else %}0{% endif %}">
+                                <p class="pf-label">City</p>
+                                <p class="pf-value">{{ request.user.city|default:"Not specified" }}</p>
+                                <p class="pf-hint">The city where you want to receive your order.</p>
+                            </div>
+                            <div class="pf-field sm:col-span-2" data-filled="{% if request.user.address1 %}1{% else %}0{% endif %}">
+                                <p class="pf-label">Street address</p>
+                                <p class="pf-value">{{ request.user.address1|default:"Not specified" }}</p>
+                                <p class="pf-hint">Street and house number.</p>
+                            </div>
+                            <div class="pf-field sm:col-span-2" style="border-bottom:0">
+                                <p class="pf-label">Apartment, suite (optional)</p>
+                                <p class="pf-value">{% if request.user.address2 %}{{ request.user.address2 }}{% else %}<span class="pf-empty">None</span>{% endif %}</p>
+                                <p class="pf-hint">Add a flat, floor or entrance code if needed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Orders -->
+                <section id="section-orders" class="scroll-mt-28">
+                    <h2 class="pf-title">Latest order</h2>
+                    <p class="pf-sub mb-5">Your most recent purchase and where it stands.</p>
+
+                    <div class="pf-card">
+                        {% if latest_order %}
+                            <div class="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-gold/30">
+                                <p class="font-display text-2xl">Order #{{ latest_order.id }}</p>
+                                <span class="pf-badge">{{ latest_order.get_status_display }}</span>
+                            </div>
+                            <div class="grid gap-x-10 sm:grid-cols-2">
+                                <div class="pf-field" style="border-bottom:0">
+                                    <p class="pf-label">Placed on</p>
+                                    <p class="pf-value">{{ latest_order.created_at|date:"F d, Y" }}</p>
+                                </div>
+                                <div class="pf-field" style="border-bottom:0">
+                                    <p class="pf-label">Total</p>
+                                    <p class="pf-value font-display text-2xl">€{{ latest_order.total_price|floatformat:2 }}</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-6">
+                                <p class="font-display text-2xl mb-2">No orders yet</p>
+                                <p class="pf-sub mb-6">Your first piece will appear here once you place an order.</p>
+                                <a href="{% url 'main:index' %}"
+                                   hx-get="{% url 'main:index' %}"
+                                   hx-target="#main-content"
+                                   hx-push-url="true"
+                                   class="btn-gold btn-sm">Start shopping</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <div class="pf-tip">
+                    <i aria-hidden="true"></i>
+                    <p>Your profile photo is saved in this browser only. It stays on this device and is not sent to our servers.</p>
+                </div>
+
+                <!-- Recommendations -->
+                <section id="section-picks" class="scroll-mt-28">
+                    <h2 class="pf-title">You may also like</h2>
+                    <p class="pf-sub mb-6">Pieces picked from what you have viewed and bought.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for product in recommended_products %}
+                            <div class="product-card">
+                                <div class="image-wrap relative aspect-[4/5]">
+                                    {% if product.main_image %}
+                                        <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="product-image w-full h-full object-cover">
+                                    {% else %}
+                                        <img src="{% static 'img/placeholder.jpg' %}" alt="{{ product.name }}" class="product-image w-full h-full object-cover">
+                                    {% endif %}
+                                </div>
+                                <div class="pt-4 text-center">
+                                    <h3 class="hero-title text-lg">{{ product.name }}</h3>
+                                    <p class="text-sm text-gold-dark mt-1">€{{ product.price }}</p>
+                                    <a href="{% url 'main:product_detail' product.slug %}"
+                                       hx-get="{% url 'main:product_detail' product.slug %}"
+                                       hx-target="#main-content"
+                                       hx-push-url="true"
+                                       class="btn-outline btn-sm mt-4">Choose options</a>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="pf-sub col-span-full">No recommended products available at the moment.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ Delete account confirmation ============ -->
+<dialog id="deleteDialog" class="pf-dialog" aria-labelledby="deleteTitle">
+    <h2 id="deleteTitle" class="pf-title mb-3">Delete your account?</h2>
+    <p class="text-sm text-ink/70 font-light leading-relaxed mb-6">
+        This permanently removes your profile and personal details. This action cannot be undone.
+    </p>
+    <form method="post" action="{% url 'users:delete_account' %}" class="flex flex-wrap gap-3">
+        {% csrf_token %}
+        <button type="submit" class="btn-danger">Yes, delete my account</button>
+        <button type="button"
+                class="btn-outline btn-sm"
+                onclick="document.getElementById('deleteDialog').close()">Cancel</button>
+    </form>
+</dialog>
+
+<script>
+    // IIFE: страница подгружается через HTMX, DOMContentLoaded к этому моменту уже прошёл
+    (function () {
+        const toast = (m) => window.showToast && window.showToast(m);
+
+        /* ---------- Аватарка (хранится в localStorage, бэкенд не нужен) ---------- */
+        const KEY = 'avatar_{{ request.user.pk|default:"guest" }}';
+        const btn = document.getElementById('avatarBtn');
+        const input = document.getElementById('avatarInput');
+        const img = document.getElementById('avatarImg');
+        const removeBtn = document.getElementById('avatarRemove');
+        const note = document.getElementById('avatarNote');
+
+        function show(src) {
+            if (src) { img.src = src; btn.classList.add('has-img'); removeBtn.hidden = false; }
+            else { img.removeAttribute('src'); btn.classList.remove('has-img'); removeBtn.hidden = true; }
+        }
+        try { show(localStorage.getItem(KEY)); } catch (e) {}
+
+        function handleFile(file) {
+            if (!file) return;
+            if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { toast('Please choose a JPG, PNG or WebP image'); return; }
+            if (file.size > 5 * 1024 * 1024) { toast('The photo is larger than 5 MB'); return; }
+            const reader = new FileReader();
+            reader.onload = function () {
+                const pic = new Image();
+                pic.onload = function () {
+                    // квадратная обрезка по центру до 320px
+                    const size = Math.min(pic.width, pic.height), out = 320;
+                    const c = document.createElement('canvas');
+                    c.width = c.height = out;
+                    c.getContext('2d').drawImage(pic, (pic.width - size) / 2, (pic.height - size) / 2, size, size, 0, 0, out, out);
+                    const data = c.toDataURL('image/jpeg', 0.88);
+                    try { localStorage.setItem(KEY, data); } catch (e) { toast('Could not save the photo in this browser'); }
+                    show(data);
+                    note.textContent = 'Photo updated.';
+                    toast('Profile photo updated');
+                };
+                pic.onerror = () => toast('This image could not be read');
+                pic.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        btn.addEventListener('click', () => input.click());
+        input.addEventListener('change', () => { handleFile(input.files[0]); input.value = ''; });
+        removeBtn.addEventListener('click', function () {
+            try { localStorage.removeItem(KEY); } catch (e) {}
+            show(null);
+            note.textContent = 'Photo removed. Your initials are shown instead.';
+            toast('Photo removed');
+        });
+        ['dragenter', 'dragover'].forEach(ev => btn.addEventListener(ev, e => { e.preventDefault(); btn.classList.add('drag'); }));
+        ['dragleave', 'drop'].forEach(ev => btn.addEventListener(ev, e => { e.preventDefault(); btn.classList.remove('drag'); }));
+        btn.addEventListener('drop', e => handleFile(e.dataTransfer.files[0]));
+
+        /* ---------- Заполненность профиля ---------- */
+        const ringFg = document.getElementById('ringFg');
+        const ringText = document.getElementById('ringText');
+        const ringHint = document.getElementById('ringHint');
+        let lastPct = 0;
+        function updateRing() {
+            const fields = document.querySelectorAll('.pf-field[data-filled]');
+            if (fields.length) {
+                const done = document.querySelectorAll('.pf-field[data-filled="1"]').length;
+                lastPct = Math.round(done / fields.length * 100);
+            }
+            ringFg.style.strokeDashoffset = 163.4 * (1 - lastPct / 100);
+            ringText.textContent = lastPct + '%';
+            ringHint.textContent = lastPct === 100
+                ? 'Everything is filled in. Checkout will be quick.'
+                : 'Fill in the missing fields for faster checkout.';
+        }
+        requestAnimationFrame(updateRing);
+        document.body.addEventListener('htmx:afterSwap', updateRing);
+
+        /* ---------- Подсветка раздела при прокрутке ---------- */
+        const links = document.querySelectorAll('[data-spy]');
+        const sections = Array.from(links).map(l => document.getElementById(l.dataset.spy)).filter(Boolean);
+        if ('IntersectionObserver' in window && sections.length) {
+            const spy = new IntersectionObserver(entries => {
+                entries.forEach(en => {
+                    if (en.isIntersecting) {
+                        links.forEach(l => l.classList.toggle('active', l.dataset.spy === en.target.id));
+                    }
+                });
+            }, { rootMargin: '-30% 0px -60% 0px' });
+            sections.forEach(s => spy.observe(s));
+        }
+        links.forEach(l => l.addEventListener('click', function (e) {
+            const t = document.getElementById(this.dataset.spy);
+            if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        }));
+    })();
+</script>
+{% endblock %}
